@@ -20,6 +20,8 @@ namespace FileReplacer
             get;
             set;
         }
+
+        public bool IsPopupVisible { get; set; }
     }
     public class Destination
     {

@@ -7,6 +7,7 @@ using System.Windows;
 using Path = System.IO.Path;
 using Serilog;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace FileReplacer
 {
@@ -93,7 +94,7 @@ namespace FileReplacer
 
                         if (txtBackup.Visibility == Visibility.Visible && !string.IsNullOrEmpty(txtBackup.Text))
                         {
-                            if(!Directory.Exists(txtBackup.Text))
+                            if (!Directory.Exists(txtBackup.Text))
                             {
                                 Log.Information($"The backup path is {txtBackup.Text}");
                                 MessageBox.Show("The backup path is either invalid or is not present");
@@ -126,6 +127,136 @@ namespace FileReplacer
         private void chkBackup_Checked(object sender, RoutedEventArgs e)
         {
             txtBackup.Visibility = txtBackup.Visibility == Visibility.Visible ? Visibility.Hidden : Visibility.Visible;
+        }
+
+        private void btnLoadProfile_Click(object sender, RoutedEventArgs e)
+        {
+            puLoad.IsOpen = true;
+        }
+
+        private void btnLoadSource_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void btnLoadDestination_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void btnLoadBoth_Click(object sender, RoutedEventArgs e)
+        {
+            string val;
+            using (JsonTextReader rdr = new JsonTextReader(new StreamReader(new FileStream("Profiles//destProfile.json", FileMode.Open))))
+            {
+                val = rdr.ReadAsString();
+            }
+
+            if (!string.IsNullOrEmpty(val))
+            {
+                Profile prf = JsonConvert.DeserializeObject<Profile>(val);
+                ObservableCollection<Source> ocSrc = new ObservableCollection<Source>();
+                foreach (var item in prf?.SourceLocations)
+                {
+                    ocSrc.Add(new Source()
+                    {
+                        Path = item
+                    });
+                }
+
+                ObservableCollection<Destination> ocDest = new ObservableCollection<Destination>();
+                foreach (var item in prf?.DestinationLocations)
+                {
+                    ocDest.Add(new Destination()
+                    {
+                        Path = item
+                    });
+                }
+
+                ViewModel model = new ViewModel()
+                {
+                    DestinationValues = ocDest,
+                    SourceValues = ocSrc
+                };
+
+                gridSource.DataContext = model.SourceValues;
+                gridDestinations.DataContext = model.DestinationValues;
+
+                gridSource.ItemsSource= ocSrc;
+                gridDestinations.ItemsSource= ocDest;
+
+                txtBackup.Text = prf?.BackupLocation;
+                chkBackup.IsChecked = prf?.IsBackupEnabled;
+            }
+        }
+
+        private void btnSaveProfile_Click(object sender, RoutedEventArgs e)
+        {
+            puSave.IsOpen = true;
+        }
+
+        private void btnSaveSource_Click(object sender, RoutedEventArgs e)
+        {
+            VerifyProfileDirectory();
+            List<string> lstSource = ((ObservableCollection<Source>)gridSource.ItemsSource).Where(a => !string.IsNullOrEmpty(a.Path))
+                .Select(c => c.Path).ToList();
+            List<string> lstDestinations = ((ObservableCollection<Destination>)gridDestinations.ItemsSource).Where(a => !string.IsNullOrEmpty(a.Path))
+                .Select(c => c.Path).ToList();
+            Profile prf = new Profile(false, null, lstSource, null);
+            string val = JsonConvert.SerializeObject(prf);
+            using (JsonTextWriter wrtr = new JsonTextWriter(new StreamWriter(new FileStream("Profiles//destProfile.json", FileMode.CreateNew))))
+            {
+                wrtr.WriteValue(val);
+            }
+        }
+
+        private void btnSaveDestination_Click(object sender, RoutedEventArgs e)
+        {
+            VerifyProfileDirectory();
+            List<string> lstSource = ((ObservableCollection<Source>)gridSource.ItemsSource).Where(a => !string.IsNullOrEmpty(a.Path))
+                .Select(c => c.Path).ToList();
+            List<string> lstDestinations = ((ObservableCollection<Destination>)gridDestinations.ItemsSource).Where(a => !string.IsNullOrEmpty(a.Path))
+                .Select(c => c.Path).ToList();
+            Profile prf = new Profile(chkBackup.IsChecked.Value, txtBackup.Text, null, lstDestinations);
+            string val = JsonConvert.SerializeObject(prf);
+            using (JsonTextWriter wrtr = new JsonTextWriter(new StreamWriter(new FileStream("Profiles//destProfile.json", FileMode.CreateNew))))
+            {
+                wrtr.WriteValue(val);
+            }
+        }
+
+        private void btnSaveBoth_Click(object sender, RoutedEventArgs e)
+        {
+            VerifyProfileDirectory();
+            List<string> lstSource = ((ObservableCollection<Source>)gridSource.ItemsSource).Where(a => !string.IsNullOrEmpty(a.Path))
+                .Select(c => c.Path).ToList();
+            List<string> lstDestinations = ((ObservableCollection<Destination>)gridDestinations.ItemsSource).Where(a => !string.IsNullOrEmpty(a.Path))
+                .Select(c => c.Path).ToList();
+            Profile prf = new Profile(chkBackup.IsChecked.Value, txtBackup.Text, lstSource, lstDestinations);
+            string val = JsonConvert.SerializeObject(prf);
+            using (JsonTextWriter wrtr = new JsonTextWriter(new StreamWriter(new FileStream("Profiles//destProfile.json", FileMode.CreateNew))))
+            {
+                wrtr.WriteValue(val);
+            }
+        }
+
+        private void btnLoadClose_Click(object sender, RoutedEventArgs e)
+        {
+            puLoad.IsOpen = false;
+            puSave.IsOpen = false;
+        }
+
+        private void btnSaveClose_Click(object sender, RoutedEventArgs e)
+        {
+            puLoad.IsOpen = false;
+            puSave.IsOpen = false;
+        }
+
+        private static void VerifyProfileDirectory()
+        {
+            string directoryName = "Profiles";
+            if (!Directory.Exists(directoryName))
+                Directory.CreateDirectory(directoryName);
         }
 
         protected virtual void Dispose(bool disposing)
