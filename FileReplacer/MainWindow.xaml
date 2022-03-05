@@ -18,6 +18,7 @@
             <RowDefinition Height="1*"></RowDefinition>
         </Grid.RowDefinitions>
         <Button x:Name="btnBrowse" Grid.Column="0" HorizontalAlignment="Left" Content="Browse files" Width="100" Click="btnBrowse_Click" Height="30"/>
+        <Button x:Name="btnReset" Grid.Column="0" HorizontalAlignment="Right" Content="Reset" Width="100" Click="btnReset_Click" Height="30"/>
         <Button x:Name="btnLoadProfile" Grid.Column="1" HorizontalAlignment="Right" Content="Load Profile" Width="100" Click="btnLoadProfile_Click" Height="30"/>
         <StackPanel Grid.Row="1" Grid.ColumnSpan="2" MinWidth="400" Margin="0,10,0,0" CanVerticallyScroll="True" >
             <!--<TextBlock TextWrapping="Wrap" x:Name="txtBlock" />-->
@@ -33,34 +34,26 @@
                     <DataGridTextColumn Header="Path" Width="*" Binding="{Binding Path}" ></DataGridTextColumn>
                 </DataGrid.Columns>
             </DataGrid>
-            <CheckBox Name="chkBackup" Margin="0,10,0,0" Content="Take backup of existing files at destination" Checked="chkBackup_Checked" ></CheckBox>
-            <TextBox Name="txtBackup" Margin="0,10,0,0" Visibility="Hidden" ></TextBox>
+            <CheckBox x:Name="chkBackup" Margin="0,10,0,0" Content="Take backup of existing files at destination" Click="chkBackup_Checked" />
+            <TextBox x:Name="txtBackup" Margin="0,10,0,0" Visibility="{Binding IsPopupVisible}" ></TextBox>
             <Grid>
-                <Button Name="btnReplace" HorizontalAlignment="Left" Height="30" Width="100" Click="btnReplace_Click" Content="Replace" />
-                <Button Name="btnSaveProfile" HorizontalAlignment="Right" Content="Save Profile" Width="100" Click="btnSaveProfile_Click" Height="30" />
+                <Button x:Name="btnReplace" HorizontalAlignment="Left" Height="30" Width="100" Click="btnReplace_Click" Content="Replace" />
+                <Button x:Name="btnSaveProfile" HorizontalAlignment="Right" Content="Save Profile" Width="100" Click="btnSaveProfile_Click" Height="30" />
             </Grid>
         </StackPanel>
-        <Popup IsOpen="{Binding IsPopupVisible}" Name="puLoad" Placement="Center" HorizontalOffset="0" VerticalOffset="0" Width="500" Height="100">
+        <Popup IsOpen="False" x:Name="puSave" Placement="Center"  Width="500" Height="100">
             <Grid Background="Beige">
                 <Border BorderBrush="Blue" BorderThickness="4">
                 </Border>
-                <Button Content="Close" Name="btnLoadClose" Margin="0,60,10,0" HorizontalAlignment="Right" Height="20" Click="btnLoadClose_Click" />
-                <Button x:Name="btnLoadSource" Margin="10" HorizontalAlignment="Left" Content="Load Profile - Source" Width="150" Click="btnLoadSource_Click" Height="30"/>
-                <Button x:Name="btnLoadDestination" Margin="10" HorizontalAlignment="Center" Content="Load Profile - Destination" Width="150" Click="btnLoadDestination_Click" Height="30"/>
-                <Button x:Name="btnLoadBoth" Margin="10" HorizontalAlignment="Right" Content="Load Profile - Both" Width="150" Click="btnLoadBoth_Click" Height="30"/>
+
+                <CheckBox Content="Source" x:Name="chkSaveSourceProfile" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="10"/>
+                <CheckBox Content="Backup" x:Name="chkSaveBackupProfile" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10" />
+                <CheckBox Content="Destination" x:Name="chkSaveDestinationProfile" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="10" />
+                <Button Content="Save" x:Name="btnProfileSave" Margin="10,60,0,0" HorizontalAlignment="Left" Height="20" Click="btnProfileSave_Click" />
+                <Button Content="Cancel" x:Name="btnSaveClose" Margin="0,60,10,0" HorizontalAlignment="Right" Height="20" Click="btnSaveClose_Click" />
             </Grid>
         </Popup>
-        <Popup IsOpen="{Binding IsPopupVisible}" Name="puSave" Placement="Center"  Width="500" Height="100">
-            <Grid Background="Beige">
-                <Border BorderBrush="Blue" BorderThickness="4">
-                </Border>
-                <Button Content="Close" Name="btnSaveClose" Margin="0,60,10,0" HorizontalAlignment="Right" Height="20" Click="btnSaveClose_Click" />
-                <Button x:Name="btnSaveSource" Margin="10" HorizontalAlignment="Left" Content="Save Profile - Source" Width="150" Click="btnSaveSource_Click" Height="30"/>
-                <Button x:Name="btnSaveDestination" Margin="10" HorizontalAlignment="Center" Content="Save Profile - Destination" Width="150" Click="btnSaveDestination_Click" Height="30"/>
-                <Button x:Name="btnSaveBoth" Margin="10" HorizontalAlignment="Right" Content="Save Profile - Both" Width="150" Click="btnSaveBoth_Click" Height="30"/>
-            </Grid>
-        </Popup>
-        <ProgressBar Grid.ColumnSpan="2" Margin="0,10,0,0"  Grid.Row="3" Name="pbStatus" Height="20"></ProgressBar>
+        <ProgressBar Grid.ColumnSpan="2" Margin="0,10,0,0"  Grid.Row="3" x:Name="pbStatus" Height="20"></ProgressBar>
     </Grid>
     <Window.DataContext>
         <local:ViewModel />

@@ -16,12 +16,16 @@ namespace FileReplacer
     /// </summary>
     public partial class MainWindow : Window, IDisposable
     {
-        ObservableCollection<Source> sourcePaths = new ObservableCollection<Source>();
-        private bool disposedValue;
+        private ObservableCollection<Source> _sourcePaths = new();
+        private ObservableCollection<Destination> _destinationPaths = new();
+        private bool _disposedValue;
 
         public MainWindow()
         {
             InitializeComponent();
+
+            ViewModel vmObj = this.DataContext as ViewModel;
+            vmObj.IsPopupVisible = Visibility.Hidden;
 
             Log.Logger = new LoggerConfiguration()
                 .MinimumLevel.Debug()
@@ -31,29 +35,32 @@ namespace FileReplacer
 
         private void btnBrowse_Click(object sender, RoutedEventArgs e)
         {
-            OpenFileDialog openFileDlg;
+            OpenFileDialog? openFileDlg;
             try
             {
                 // Create OpenFileDialog
-                openFileDlg = new OpenFileDialog();
+                openFileDlg = new OpenFileDialog
+                {
 
-                // Configure OpenFileDialog
-                openFileDlg.Multiselect = true;
-                openFileDlg.Filter = "All files (*.*)|*.*";
+                    // Configure OpenFileDialog
+                    Multiselect = true,
+                    Filter = "All files (*.*)|*.*"
+                };
 
                 // Launch OpenFileDialog by calling ShowDialog method
                 bool? result = openFileDlg.ShowDialog();
 
                 // Get the selected file name and display in a TextBox.
                 // Load content of file in a TextBlock
-                if (result.HasValue && result.Value)
+                if (!result.HasValue || !result.Value) return;
+
+                foreach (string name in openFileDlg.FileNames)
                 {
-                    foreach (string name in openFileDlg.FileNames)
-                    {
-                        sourcePaths.Add(new Source() { Path = name });
-                    }
-                    gridSource.ItemsSource = sourcePaths;
+                    _sourcePaths.Add(new Source() { Path = name });
                 }
+
+                _sourcePaths = (ObservableCollection<Source>)_sourcePaths.Distinct(new SourceComparer());
+                gridSource.ItemsSource = _sourcePaths;
             }
             catch (Exception ex)
             {
@@ -131,62 +138,81 @@ namespace FileReplacer
 
         private void btnLoadProfile_Click(object sender, RoutedEventArgs e)
         {
-            puLoad.IsOpen = true;
-        }
-
-        private void btnLoadSource_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        private void btnLoadDestination_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        private void btnLoadBoth_Click(object sender, RoutedEventArgs e)
-        {
-            string val;
-            using (JsonTextReader rdr = new JsonTextReader(new StreamReader(new FileStream("Profiles//destProfile.json", FileMode.Open))))
+            string? val;
+            OpenFileDialog? openFileDlg;
+            try
             {
-                val = rdr.ReadAsString();
-            }
-
-            if (!string.IsNullOrEmpty(val))
-            {
-                Profile prf = JsonConvert.DeserializeObject<Profile>(val);
-                ObservableCollection<Source> ocSrc = new ObservableCollection<Source>();
-                foreach (var item in prf?.SourceLocations)
+                // Create OpenFileDialog
+                openFileDlg = new OpenFileDialog
                 {
-                    ocSrc.Add(new Source()
-                    {
-                        Path = item
-                    });
-                }
 
-                ObservableCollection<Destination> ocDest = new ObservableCollection<Destination>();
-                foreach (var item in prf?.DestinationLocations)
-                {
-                    ocDest.Add(new Destination()
-                    {
-                        Path = item
-                    });
-                }
-
-                ViewModel model = new ViewModel()
-                {
-                    DestinationValues = ocDest,
-                    SourceValues = ocSrc
+                    // Configure OpenFileDialog
+                    Multiselect = false,
+                    Filter = "Json files (*.json)|*.json"
                 };
 
-                gridSource.DataContext = model.SourceValues;
-                gridDestinations.DataContext = model.DestinationValues;
+                // Launch OpenFileDialog by calling ShowDialog method
+                bool? result = openFileDlg.ShowDialog();
 
-                gridSource.ItemsSource= ocSrc;
-                gridDestinations.ItemsSource= ocDest;
+                // Get the selected file name and display in a TextBox.
+                // Load content of file in a TextBlock
+                if (!result.HasValue || !result.Value) return;
 
-                txtBackup.Text = prf?.BackupLocation;
-                chkBackup.IsChecked = prf?.IsBackupEnabled;
+                using (JsonTextReader rdr =
+                   new JsonTextReader(
+                       new StreamReader(new FileStream(openFileDlg.FileName, FileMode.Open))))
+                {
+                    val = rdr.ReadAsString();
+                }
+
+                if (!string.IsNullOrEmpty(val))
+                {
+                    Profile? prf = JsonConvert.DeserializeObject<Profile>(val);
+
+                    if (prf != null)
+                    {
+                        if (prf.SourceLocations != null && prf.SourceLocations.Count > 0)
+                        {
+                            foreach (var item in prf.SourceLocations)
+                            {
+                                _sourcePaths.Add(new Source()
+                                {
+                                    Path = item
+                                });
+                            }
+                        }
+
+                        if (prf.DestinationLocations != null && prf.DestinationLocations.Count > 0)
+                        {
+                            foreach (var item in prf.DestinationLocations)
+                            {
+                                _destinationPaths.Add(new Destination()
+                                {
+                                    Path = item
+                                });
+                            }
+                        }
+
+                        _sourcePaths = new ObservableCollection<Source>(_sourcePaths.Distinct(new SourceComparer()));
+                        _destinationPaths =
+                            new ObservableCollection<Destination>(
+                                _destinationPaths.Distinct(new DestinationComparer()));
+
+                        gridSource.ItemsSource = _sourcePaths;
+                        gridDestinations.ItemsSource = _destinationPaths;
+
+                        chkBackup.IsChecked = prf.IsBackupEnabled ?? false;
+                        txtBackup.Text = prf.BackupLocation ?? "";
+                        txtBackup.Visibility = (prf.IsBackupEnabled != null && prf.IsBackupEnabled.Value)
+                            ? Visibility.Visible
+                            : Visibility.Hidden;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Failed to load profile");
+                Log.Error(ex, "Error occurred while loading profile");
             }
         }
 
@@ -195,73 +221,58 @@ namespace FileReplacer
             puSave.IsOpen = true;
         }
 
-        private void btnSaveSource_Click(object sender, RoutedEventArgs e)
+        private void btnProfileSave_Click(object sender, RoutedEventArgs e)
         {
-            VerifyProfileDirectory();
-            List<string> lstSource = ((ObservableCollection<Source>)gridSource.ItemsSource).Where(a => !string.IsNullOrEmpty(a.Path))
-                .Select(c => c.Path).ToList();
-            List<string> lstDestinations = ((ObservableCollection<Destination>)gridDestinations.ItemsSource).Where(a => !string.IsNullOrEmpty(a.Path))
-                .Select(c => c.Path).ToList();
-            Profile prf = new Profile(false, null, lstSource, null);
-            string val = JsonConvert.SerializeObject(prf);
-            using (JsonTextWriter wrtr = new JsonTextWriter(new StreamWriter(new FileStream("Profiles//destProfile.json", FileMode.CreateNew))))
-            {
-                wrtr.WriteValue(val);
-            }
-        }
+            List<string>? lstSource = (chkSaveSourceProfile.IsChecked != null && chkSaveSourceProfile.IsChecked.Value) ? ((ObservableCollection<Source>)gridSource.ItemsSource).Where(a => !string.IsNullOrEmpty(a.Path))
+                .Select(c => c.Path).ToList() : null;
+            List<string>? lstDestinations = (chkSaveDestinationProfile.IsChecked != null && chkSaveDestinationProfile.IsChecked.Value) ? ((ObservableCollection<Destination>)gridDestinations.ItemsSource).Where(a => !string.IsNullOrEmpty(a.Path))
+                .Select(c => c.Path).ToList() : null;
+            bool? isChecked = (chkSaveBackupProfile.IsChecked != null && chkSaveBackupProfile.IsChecked.Value) ? chkBackup.IsChecked : null;
+            string? locBackup = (chkSaveBackupProfile.IsChecked != null && chkSaveBackupProfile.IsChecked.Value) ? txtBackup.Text : null;
 
-        private void btnSaveDestination_Click(object sender, RoutedEventArgs e)
-        {
-            VerifyProfileDirectory();
-            List<string> lstSource = ((ObservableCollection<Source>)gridSource.ItemsSource).Where(a => !string.IsNullOrEmpty(a.Path))
-                .Select(c => c.Path).ToList();
-            List<string> lstDestinations = ((ObservableCollection<Destination>)gridDestinations.ItemsSource).Where(a => !string.IsNullOrEmpty(a.Path))
-                .Select(c => c.Path).ToList();
-            Profile prf = new Profile(chkBackup.IsChecked.Value, txtBackup.Text, null, lstDestinations);
-            string val = JsonConvert.SerializeObject(prf);
-            using (JsonTextWriter wrtr = new JsonTextWriter(new StreamWriter(new FileStream("Profiles//destProfile.json", FileMode.CreateNew))))
-            {
-                wrtr.WriteValue(val);
-            }
-        }
+            Profile prf = new Profile(isChecked, locBackup, lstSource, lstDestinations);
+            string val = JsonConvert.SerializeObject(prf, new JsonSerializerSettings() { Formatting = Formatting.Indented, NullValueHandling = NullValueHandling.Ignore });
 
-        private void btnSaveBoth_Click(object sender, RoutedEventArgs e)
-        {
-            VerifyProfileDirectory();
-            List<string> lstSource = ((ObservableCollection<Source>)gridSource.ItemsSource).Where(a => !string.IsNullOrEmpty(a.Path))
-                .Select(c => c.Path).ToList();
-            List<string> lstDestinations = ((ObservableCollection<Destination>)gridDestinations.ItemsSource).Where(a => !string.IsNullOrEmpty(a.Path))
-                .Select(c => c.Path).ToList();
-            Profile prf = new Profile(chkBackup.IsChecked.Value, txtBackup.Text, lstSource, lstDestinations);
-            string val = JsonConvert.SerializeObject(prf);
-            using (JsonTextWriter wrtr = new JsonTextWriter(new StreamWriter(new FileStream("Profiles//destProfile.json", FileMode.CreateNew))))
+            // Create SaveFileDialog
+            SaveFileDialog saveFileDlg = new SaveFileDialog
             {
-                wrtr.WriteValue(val);
-            }
-        }
+                // Configure SaveFileDialog
+                Filter = "Json files (*.json)|*.json"
+            };
 
-        private void btnLoadClose_Click(object sender, RoutedEventArgs e)
-        {
-            puLoad.IsOpen = false;
             puSave.IsOpen = false;
+            // Launch SaveFileDialog by calling ShowDialog method
+            bool? result = saveFileDlg.ShowDialog();
+            // Get the selected file name and display in a TextBox.
+            // Load content of file in a TextBlock
+            if (!result.HasValue || !result.Value) return;
+
+            using (JsonTextWriter wrtr = new JsonTextWriter(new StreamWriter(new FileStream(saveFileDlg.FileName, FileMode.Create))))
+            {
+                wrtr.WriteValue(val);
+                Console.WriteLine();
+            }
         }
 
         private void btnSaveClose_Click(object sender, RoutedEventArgs e)
         {
-            puLoad.IsOpen = false;
             puSave.IsOpen = false;
         }
 
-        private static void VerifyProfileDirectory()
+        private void btnReset_Click(object sender, RoutedEventArgs e)
         {
-            string directoryName = "Profiles";
-            if (!Directory.Exists(directoryName))
-                Directory.CreateDirectory(directoryName);
+            gridSource.ItemsSource = null;
+            gridDestinations.ItemsSource = null;
+            txtBackup.Text = null;
+            chkBackup.IsChecked = false;
+            chkSaveBackupProfile.IsChecked = false;
+            chkSaveDestinationProfile.IsChecked = false;
+            chkSaveSourceProfile.IsChecked = false;
         }
 
         protected virtual void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            if (!_disposedValue)
             {
                 if (disposing)
                 {
@@ -271,7 +282,7 @@ namespace FileReplacer
 
                 // TODO: free unmanaged resources (unmanaged objects) and override finalizer
                 // TODO: set large fields to null
-                disposedValue = true;
+                _disposedValue = true;
             }
         }
 
