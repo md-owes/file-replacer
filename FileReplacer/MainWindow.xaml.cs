@@ -59,7 +59,7 @@ namespace FileReplacer
                     _sourcePaths.Add(new Source() { Path = name });
                 }
 
-                _sourcePaths = (ObservableCollection<Source>)_sourcePaths.Distinct(new SourceComparer());
+                _sourcePaths = new ObservableCollection<Source>(_sourcePaths.Distinct(new SourceComparer()));
                 gridSource.ItemsSource = _sourcePaths;
             }
             catch (Exception ex)
