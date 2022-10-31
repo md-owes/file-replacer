@@ -10,33 +10,34 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="1*"></ColumnDefinition>
             <ColumnDefinition Width="1*"></ColumnDefinition>
+            <ColumnDefinition Width="1*"></ColumnDefinition>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="1*"></RowDefinition>
-            <RowDefinition Height="4*"></RowDefinition>
-            <RowDefinition Height="4*"></RowDefinition>
+            <RowDefinition Height="1*"></RowDefinition>
+            <RowDefinition Height="2*"></RowDefinition>
             <RowDefinition Height="1*"></RowDefinition>
         </Grid.RowDefinitions>
         <Button x:Name="btnBrowse" Grid.Column="0" HorizontalAlignment="Left" Content="Browse files" Width="100" Click="btnBrowse_Click" Height="30"/>
-        <Button x:Name="btnReset" Grid.Column="0" HorizontalAlignment="Right" Content="Reset" Width="100" Click="btnReset_Click" Height="30"/>
-        <Button x:Name="btnLoadProfile" Grid.Column="1" HorizontalAlignment="Right" Content="Load Profile" Width="100" Click="btnLoadProfile_Click" Height="30"/>
-        <StackPanel Grid.Row="1" Grid.ColumnSpan="2" MinWidth="400" Margin="0,10,0,0" CanVerticallyScroll="True" >
+        <Button x:Name="btnReset" Grid.Column="1" HorizontalAlignment="Center" Content="Reset" Width="100" Click="btnReset_Click" Height="30"/>
+        <Button x:Name="btnLoadProfile" Grid.Column="2" HorizontalAlignment="Right" Content="Load Profile" Width="100" Click="btnLoadProfile_Click" Height="30"/>
+        <StackPanel Grid.Row="1" Grid.ColumnSpan="3" MinWidth="400" Margin="0,10,0,0" CanVerticallyScroll="True" >
             <!--<TextBlock TextWrapping="Wrap" x:Name="txtBlock" />-->
-            <DataGrid x:Name="gridSource" MaxHeight="200" HorizontalAlignment="Left" CanUserSortColumns="False" ItemsSource="{Binding SourceValues}" AutoGenerateColumns="False" VerticalScrollBarVisibility="Auto" CanUserDeleteRows="True">
+            <DataGrid x:Name="gridSource" MaxHeight="120" HorizontalAlignment="Left" CanUserSortColumns="False" ItemsSource="{Binding SourceValues}" AutoGenerateColumns="False" VerticalScrollBarVisibility="Auto" CanUserDeleteRows="True">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="SourceFiles" Width="*" Binding="{Binding Path}" ></DataGridTextColumn>
                 </DataGrid.Columns>
             </DataGrid>
         </StackPanel>
-        <StackPanel Grid.Row="2" Margin="0,10,0,0" MinWidth="400" Grid.ColumnSpan="2" CanVerticallyScroll="True">
-            <DataGrid x:Name="gridDestinations" MaxHeight="200" HorizontalAlignment="Left" CanUserSortColumns="False" ItemsSource="{Binding DestinationValues}" AutoGenerateColumns="False" VerticalScrollBarVisibility="Auto" CanUserDeleteRows="True">
+        <StackPanel Grid.Row="2" Margin="0,10,0,0" MinWidth="400" Grid.ColumnSpan="3" CanVerticallyScroll="True">
+            <DataGrid x:Name="gridDestinations" MaxHeight="120" HorizontalAlignment="Left" CanUserSortColumns="False" ItemsSource="{Binding DestinationValues}" AutoGenerateColumns="False" VerticalScrollBarVisibility="Auto" CanUserDeleteRows="True">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Path" Width="*" Binding="{Binding Path}" ></DataGridTextColumn>
+                    <DataGridTextColumn Header="Destination Path" Width="*" Binding="{Binding Path}" ></DataGridTextColumn>
                 </DataGrid.Columns>
             </DataGrid>
             <CheckBox x:Name="chkBackup" Margin="0,10,0,0" Content="Take backup of existing files at destination" Click="chkBackup_Checked" />
             <TextBox x:Name="txtBackup" Margin="0,10,0,0" Visibility="{Binding IsPopupVisible}" ></TextBox>
-            <Grid>
+            <Grid Margin="0,10,0,0">
                 <Button x:Name="btnReplace" HorizontalAlignment="Left" Height="30" Width="100" Click="btnReplace_Click" Content="Replace" />
                 <Button x:Name="btnSaveProfile" HorizontalAlignment="Right" Content="Save Profile" Width="100" Click="btnSaveProfile_Click" Height="30" />
             </Grid>
@@ -53,7 +54,7 @@
                 <Button Content="Cancel" x:Name="btnSaveClose" Margin="0,60,10,0" HorizontalAlignment="Right" Height="20" Click="btnSaveClose_Click" />
             </Grid>
         </Popup>
-        <ProgressBar Grid.ColumnSpan="2" Margin="0,10,0,0"  Grid.Row="3" x:Name="pbStatus" Height="20"></ProgressBar>
+        <ProgressBar Grid.ColumnSpan="3" Margin="0,10,0,0"  Grid.Row="3" x:Name="pbStatus" Height="20"></ProgressBar>
     </Grid>
     <Window.DataContext>
         <local:ViewModel />

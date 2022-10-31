@@ -81,6 +81,13 @@ namespace FileReplacer
                 string[] filesToCopy = ((ObservableCollection<Source>)gridSource.ItemsSource).Where(a => !string.IsNullOrEmpty(a.Path)).Select(c => c.Path).ToArray();
                 string[] destLocations = ((ObservableCollection<Destination>)gridDestinations.ItemsSource).Where(a => !string.IsNullOrEmpty(a.Path)).Select(c => c.Path).ToArray();
 
+                if (filesToCopy.Length < 1 || destLocations.Length < 1)
+                {
+                    Log.Information("source or destination empty");
+                    MessageBox.Show("Either source or destination not provided");
+                    return;
+                }
+
                 // calculating the progress percentage
                 int total = destLocations.Length * filesToCopy.Length;
                 int i = 1;
@@ -99,7 +106,7 @@ namespace FileReplacer
                         // separating the filename from path
                         string fileName = file.Split("\\", StringSplitOptions.RemoveEmptyEntries)?.LastOrDefault();
 
-                        if (txtBackup.Visibility == Visibility.Visible && !string.IsNullOrEmpty(txtBackup.Text))
+                        if (chkBackup.IsChecked.Value && !string.IsNullOrEmpty(txtBackup.Text))
                         {
                             if (!Directory.Exists(txtBackup.Text))
                             {
@@ -261,10 +268,13 @@ namespace FileReplacer
 
         private void btnReset_Click(object sender, RoutedEventArgs e)
         {
-            gridSource.ItemsSource = null;
-            gridDestinations.ItemsSource = null;
+            _sourcePaths = new();
+            _destinationPaths = new();
+            gridSource.ItemsSource = _sourcePaths;
+            gridDestinations.ItemsSource = _destinationPaths;
             txtBackup.Text = null;
             chkBackup.IsChecked = false;
+            txtBackup.Visibility = Visibility.Hidden;
             chkSaveBackupProfile.IsChecked = false;
             chkSaveDestinationProfile.IsChecked = false;
             chkSaveSourceProfile.IsChecked = false;
@@ -299,5 +309,6 @@ namespace FileReplacer
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
+
     }
 }
